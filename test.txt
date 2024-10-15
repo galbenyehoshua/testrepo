@@ -12,10 +12,20 @@ if (-not (Get-Module -ListAvailable -Name ImportExcel)) {
 }
 
 # Create a new Excel package
-$excelPackage = New-ExcelPackage -Path $outputExcelFile
+try {
+    $excelPackage = New-ExcelPackage -Path $outputExcelFile
+} catch {
+    Write-Host "Failed to create Excel package. Error: $_" -ForegroundColor Red
+    exit
+}
 
 # Get all CSV files in the specified folder
 $csvFiles = Get-ChildItem -Path $folderPath -Filter "*.csv"
+
+if ($csvFiles.Count -eq 0) {
+    Write-Host "No CSV files found in the specified folder." -ForegroundColor Yellow
+    exit
+}
 
 foreach ($csvFile in $csvFiles) {
     if (Test-Path $csvFile.FullName) {
@@ -33,6 +43,9 @@ foreach ($csvFile in $csvFiles) {
 }
 
 # Save the Excel package
-Close-ExcelPackage $excelPackage
-
-Write-Host "Excel file created at $outputExcelFile"
+try {
+    Close-ExcelPackage $excelPackage
+    Write-Host "Excel file created at $outputExcelFile"
+} catch {
+    Write-Host "Failed to save the Excel package. Error: $_" -ForegroundColor Red
+}
