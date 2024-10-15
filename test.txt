@@ -19,21 +19,12 @@ foreach ($accessRule in $acl.Access) {
     
     # Check if the identity matches any of the exclusion criteria
     if ($identity -notmatch "BUILTIN|NT AUTHORITY|CREATOR OWNER|DataMover|dlp|RMFT|GOA_XNES|sqladmin|Ti|priva|runtask|gc|S-1-5-21|ibolt") {
-        # Filter and simplify FileSystemRights
-        $rights = $accessRule.FileSystemRights
-        if ($rights -is [array]) {
-            $rights = $rights -join ', '  # Join array elements into a string
-        }
-        
-        $simplifiedRights = switch -Regex ($rights) {
-            "Read" { "Read" }
-            "ReadAndExecute" { "ReadAndExecute" }
-            "Modify" { "Modify" }
-            default { "Other" }
-        }
-        
-        # Skip if rights are not Read, ReadAndExecute, or Modify
-        if ($simplifiedRights -eq "Other") { continue }
+        # Convert FileSystemRights to a string array and join them
+        $rights = $accessRule.FileSystemRights | ForEach-Object { $_.ToString() }
+        $simplifiedRights = $rights -join ', '
+
+        # Check simplified rights for filtering
+        if ($simplifiedRights -notmatch "Read|ReadAndExecute|Modify") { continue }
 
         # Create a custom object with the desired properties
         $resultObject = [PSCustomObject]@{
