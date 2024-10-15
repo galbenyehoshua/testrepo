@@ -1,17 +1,41 @@
-Install-Module ImportExcel -scope CurrentUser
+$path="c:\path\to\folder" #target folder
+cd $path;
+
 $csvs = Get-ChildItem .\* -Include *.csv
-$csvCount = $csvs.Count
-Write-Host "Detected the following CSV files: ($csvCount)"
-foreach ($csv in $csvs) {
-    Write-Host " -"$csv.Name
+$y=$csvs.Count
+Write-Host "Detected the following CSV files: ($y)"
+foreach ($csv in $csvs)
+{
+Write-Host " "$csv.Name
 }
+$outputfilename = $(get-date -f yyyyMMdd) + "_" + $env:USERNAME + "_combined-data.xlsx" #creates file name with date/username
+Write-Host Creating: $outputfilename
+$excelapp = new-object -comobject Excel.Application
+$excelapp.sheetsInNewWorkbook = $csvs.Count
+$xlsx = $excelapp.Workbooks.Add()
+$sheet=1
 
-$excelFileName = $(get-date -f yyyyMMdd) + "_" + $env:USERNAME + "_combined-data.xlsx"
-Write-Host "Creating: $excelFileName"
-
-foreach ($csv in $csvs) {
-    $csvPath = ".\" + $csv.Name
-    $worksheetName = $csv.Name.Replace(".csv","")
-    Write-Host " - Adding $worksheetName to $excelFileName"
-    Import-Csv -Path $csvPath | Export-Excel -Path $excelFileName -WorkSheetname $worksheetName
+foreach ($csv in $csvs)
+{
+$row=1
+$column=1
+$worksheet = $xlsx.Worksheets.Item($sheet)
+$worksheet.Name = $csv.Name
+$file = (Get-Content $csv)
+foreach($line in $file)
+{
+$linecontents=$line -split ',(?!\s*\w+")'
+foreach($cell in $linecontents)
+{
+$worksheet.Cells.Item($row,$column) = $cell
+$column++
 }
+$column=1
+$row++
+}
+$sheet++
+}
+$output = $path + "\" + $outputfilename
+$xlsx.SaveAs($output)
+$excelapp.quit()
+cd \ #returns to drive root
