@@ -20,7 +20,11 @@ foreach ($accessRule in $acl.Access) {
     # Check if the identity matches any of the exclusion criteria
     if ($identity -notmatch "BUILTIN|NT AUTHORITY|CREATOR OWNER|DataMover|dlp|RMFT|GOA_XNES|sqladmin|Ti|priva|runtask|gc|S-1-5-21|ibolt") {
         # Filter and simplify FileSystemRights
-        $rights = $accessRule.FileSystemRights.ToString()
+        $rights = $accessRule.FileSystemRights
+        if ($rights -is [array]) {
+            $rights = $rights -join ', '  # Join array elements into a string
+        }
+        
         $simplifiedRights = switch -Regex ($rights) {
             "Read" { "Read" }
             "ReadAndExecute" { "ReadAndExecute" }
