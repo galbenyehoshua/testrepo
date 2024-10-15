@@ -1,9 +1,6 @@
 param(
     [Parameter(Mandatory=$true)]
-    [string]$smbpath,
-    
-    [Parameter(Mandatory=$true)]
-    [string]$outputPath
+    [string]$smbpath
 )
 
 # Create an empty array to store results
@@ -30,11 +27,11 @@ foreach ($accessRule in $acl.Access) {
         $results += $resultObject
         
         # Also write to host for immediate feedback
-        Write-Host "Added: $identity"
+        Write-Host "$identity"
     }
 }
 
 # Export results to CSV
-$results | Export-Csv -Path $outputPath -NoTypeInformation
+$results | Export-Csv -Path C:\Users\GalBY\Desktop\test.csv -NoTypeInformation -Append
 
-Write-Host "Results exported to $outputPath"
+Write-Host "Results exported to Desktop"
