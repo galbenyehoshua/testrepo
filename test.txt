@@ -1,47 +1,38 @@
 param(
     [Parameter(Mandatory=$true)]
-    [string]$smbpath
+    [string]$folderPath,
+    [Parameter(Mandatory=$true)]
+    [string]$outputExcelFile
 )
 
-# Create a filename based on the smbpath
-$safeFolderName = ($smbpath -replace '[\\\/:]', '_').Trim('_')
-$outputFile = "C:\Users\GalBY\Desktop\Permissions_$safeFolderName.csv"
+# Check if ImportExcel module is available
+if (-not (Get-Module -ListAvailable -Name ImportExcel)) {
+    Write-Host "ImportExcel module is not installed. Please install it first." -ForegroundColor Red
+    exit
+}
 
-# Create an empty array to store results
-$results = @()
+# Create a new Excel package
+$excelPackage = New-ExcelPackage -Path $outputExcelFile
 
-# Get ACL for the specified path
-$acl = Get-Acl -LiteralPath $smbpath
+# Get all CSV files in the specified folder
+$csvFiles = Get-ChildItem -Path $folderPath -Filter "*.csv"
 
-# Loop through each access rule
-foreach ($accessRule in $acl.Access) {
-    $identity = $accessRule.IdentityReference.Value
-    
-    # Check if the identity matches any of the exclusion criteria
-    if ($identity -notmatch "BUILTIN|NT AUTHORITY|CREATOR OWNER|DataMover|dlp|RMFT|GOA_XNES|sqladmin|Ti|priva|runtask|gc|S-1-5-21|ibolt") {
-        # Convert FileSystemRights to a string array and join them
-        $rights = $accessRule.FileSystemRights | ForEach-Object { $_.ToString() }
-        $simplifiedRights = $rights -join ', '
+foreach ($csvFile in $csvFiles) {
+    if (Test-Path $csvFile.FullName) {
+        # Get the file name without the extension for the tab name
+        $tabName = [System.IO.Path]::GetFileNameWithoutExtension($csvFile.Name)
 
-        # Check simplified rights for filtering
-        if ($simplifiedRights -notmatch "Read|ReadAndExecute|Modify") { continue }
+        # Import CSV data
+        $data = Import-Csv -Path $csvFile.FullName
 
-        # Create a custom object with the desired properties
-        $resultObject = [PSCustomObject]@{
-            Path = $smbpath
-            Identity = $identity
-            FileSystemRights = $simplifiedRights
-        }
-        
-        # Add the object to the results array
-        $results += $resultObject
-        
-        # Also write to host for immediate feedback
-        Write-Host "$identity : $simplifiedRights"
+        # Add data to a new worksheet
+        $data | Export-Excel -ExcelPackage $excelPackage -WorksheetName $tabName -AutoSize -TableName $tabName
+    } else {
+        Write-Host "File not found: $csvFile.FullName" -ForegroundColor Yellow
     }
 }
 
-# Export results to CSV
-$results | Export-Csv -Path $outputFile -NoTypeInformation -Append
+# Save the Excel package
+Close-ExcelPackage $excelPackage
 
-Write-Host "Results exported to $outputFile"
+Write-Host "Excel file created at $outputExcelFile"
