@@ -1,51 +1,17 @@
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$folderPath,
-    [Parameter(Mandatory=$true)]
-    [string]$outputExcelFile
-)
-
-# Check if ImportExcel module is available
-if (-not (Get-Module -ListAvailable -Name ImportExcel)) {
-    Write-Host "ImportExcel module is not installed. Please install it first." -ForegroundColor Red
-    exit
+Install-Module ImportExcel -scope CurrentUser
+$csvs = Get-ChildItem .\* -Include *.csv
+$csvCount = $csvs.Count
+Write-Host "Detected the following CSV files: ($csvCount)"
+foreach ($csv in $csvs) {
+    Write-Host " -"$csv.Name
 }
 
-# Create a new Excel package
-try {
-    $excelPackage = New-ExcelPackage -Path $outputExcelFile
-} catch {
-    Write-Host "Failed to create Excel package. Error: $_" -ForegroundColor Red
-    exit
-}
+$excelFileName = $(get-date -f yyyyMMdd) + "_" + $env:USERNAME + "_combined-data.xlsx"
+Write-Host "Creating: $excelFileName"
 
-# Get all CSV files in the specified folder
-$csvFiles = Get-ChildItem -Path $folderPath -Filter "*.csv"
-
-if ($csvFiles.Count -eq 0) {
-    Write-Host "No CSV files found in the specified folder." -ForegroundColor Yellow
-    exit
-}
-
-foreach ($csvFile in $csvFiles) {
-    if (Test-Path $csvFile.FullName) {
-        # Get the file name without the extension for the tab name
-        $tabName = [System.IO.Path]::GetFileNameWithoutExtension($csvFile.Name)
-
-        # Import CSV data
-        $data = Import-Csv -Path $csvFile.FullName
-
-        # Add data to a new worksheet
-        $data | Export-Excel -ExcelPackage $excelPackage -WorksheetName $tabName -AutoSize -TableName $tabName
-    } else {
-        Write-Host "File not found: $csvFile.FullName" -ForegroundColor Yellow
-    }
-}
-
-# Save the Excel package
-try {
-    Close-ExcelPackage $excelPackage
-    Write-Host "Excel file created at $outputExcelFile"
-} catch {
-    Write-Host "Failed to save the Excel package. Error: $_" -ForegroundColor Red
+foreach ($csv in $csvs) {
+    $csvPath = ".\" + $csv.Name
+    $worksheetName = $csv.Name.Replace(".csv","")
+    Write-Host " - Adding $worksheetName to $excelFileName"
+    Import-Csv -Path $csvPath | Export-Excel -Path $excelFileName -WorkSheetname $worksheetName
 }
