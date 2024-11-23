@@ -1,41 +1,31 @@
-$path="c:\path\to\folder" #target folder
-cd $path;
+# Define the path to the CSV file and the template XML file
+$csvPath = "C:\path\to\employees.csv"
+$templatePath = "C:\path\to\template.xml"
+$outputFolder = "C:\path\to\output\files"
 
-$csvs = Get-ChildItem .\* -Include *.csv
-$y=$csvs.Count
-Write-Host "Detected the following CSV files: ($y)"
-foreach ($csv in $csvs)
-{
-Write-Host " "$csv.Name
-}
-$outputfilename = $(get-date -f yyyyMMdd) + "_" + $env:USERNAME + "_combined-data.xlsx" #creates file name with date/username
-Write-Host Creating: $outputfilename
-$excelapp = new-object -comobject Excel.Application
-$excelapp.sheetsInNewWorkbook = $csvs.Count
-$xlsx = $excelapp.Workbooks.Add()
-$sheet=1
+# Import the CSV file containing employee data
+$employees = Import-Csv -Path $csvPath
 
-foreach ($csv in $csvs)
-{
-$row=1
-$column=1
-$worksheet = $xlsx.Worksheets.Item($sheet)
-$worksheet.Name = $csv.Name
-$file = (Get-Content $csv)
-foreach($line in $file)
-{
-$linecontents=$line -split ',(?!\s*\w+")'
-foreach($cell in $linecontents)
-{
-$worksheet.Cells.Item($row,$column) = $cell
-$column++
+# Ensure output directory exists
+if (-not (Test-Path -Path $outputFolder)) {
+    New-Item -Path $outputFolder -ItemType Directory
 }
-$column=1
-$row++
+
+# Read the template XML file
+$templateContent = Get-Content -Path $templatePath -Raw
+
+# Loop through each employee and generate the XML file
+foreach ($employee in $employees) {
+    # Replace placeholders in the template with actual values
+    $modifiedContent = $templateContent -replace "{{Username}}", $employee.Username `
+                                            -replace "{{FirstName}}", $employee.FirstName `
+                                            -replace "{{LastName}}", $employee.LastName `
+                                            -replace "{{Extension}}", $employee.Extension
+
+    # Define the filename based on the Username
+    $filePath = Join-Path -Path $outputFolder -ChildPath "$($employee.Username).xml"
+    
+    # Write the modified XML content to the file
+    $modifiedContent | Out-File -FilePath $filePath -Encoding UTF8
+    Write-Host "Generated XML for $($employee.Username) at $filePath"
 }
-$sheet++
-}
-$output = $path + "\" + $outputfilename
-$xlsx.SaveAs($output)
-$excelapp.quit()
-cd \ #returns to drive root
