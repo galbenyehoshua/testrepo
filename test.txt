@@ -1,1 +1,19 @@
-Import-Csv "C:\path\to\users.csv" | ForEach-Object { if ((Get-ADGroupMember -Identity "SecurityGroupName" | Where-Object { $_.SamAccountName -eq $_.Username })) { Write-Host "$($_.Username) is already a member of the group." } else { Write-Host "$($_.Username) is NOT a member of the group." } }
+# Define the path to your CSV file and the target security group name
+$csvPath = "C:\path\to\users.csv"
+$securityGroup = "SecurityGroupName"
+
+# Import the CSV file containing the list of usernames
+$users = Import-Csv $csvPath
+
+# Loop through each user in the CSV
+foreach ($user in $users) {
+    # Check if the user is a member of the specified security group
+    $isMember = Get-ADGroupMember -Identity $securityGroup | Where-Object { $_.SamAccountName -eq $user.Username }
+
+    # Output whether the user is a member or not
+    if ($isMember) {
+        Write-Host "$($user.Username) is a member of the group."
+    } else {
+        Write-Host "$($user.Username) is NOT a member of the group."
+    }
+}
