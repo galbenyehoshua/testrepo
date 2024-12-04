@@ -7,8 +7,9 @@ $users = Import-Csv $csvPath
 
 # Loop through each user in the CSV
 foreach ($user in $users) {
-    # Check if the user is a member of the specified security group
-    $isMember = Get-ADGroupMember -Identity $securityGroup | Where-Object { $_.SamAccountName -eq $user.Username }
+    # Get the user object from AD and check if they're a member of the specified group
+    $adUser = Get-ADUser -Identity $user.Username -Properties MemberOf
+    $isMember = $adUser.MemberOf -contains "CN=$securityGroup,"
 
     # Output whether the user is a member or not
     if ($isMember) {
