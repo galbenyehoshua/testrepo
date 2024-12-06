@@ -1,3 +1,6 @@
+# Ensure you have the ActiveDirectory module installed and imported
+Import-Module ActiveDirectory
+
 # Input CSV file path
 $inputFile = "C:\path\to\your\inputfile.csv"
 
@@ -15,15 +18,23 @@ foreach ($user in $inputData) {
     # Create a username by combining first name and last name (lowercased or any other format as needed)
     $userName = ($user.FirstName.Substring(0,1) + $user.LastName).ToLower()
 
-    # If you have a specific rule for extensions, modify this part. For example, assigning a default value or a custom logic.
-    # This example uses a fixed extension for simplicity.
-    $extension = "1234"  # This can be dynamically assigned if needed
+    # Query Active Directory to find the user by their first and last name
+    $adUser = Get-ADUser -Filter {GivenName -eq $user.FirstName -and Surname -eq $user.LastName} -Properties telephoneNumber
+
+    # Check if the user is found in AD
+    if ($adUser) {
+        # Retrieve the extension (assuming it's stored in the telephoneNumber or another attribute)
+        $extension = $adUser.telephoneNumber  # You can adjust this line if the extension is stored in another attribute like 'extensionAttribute1'
+    } else {
+        # If user not found, set extension to a default value or leave blank
+        $extension = "Not Found"
+    }
 
     # Add the new user data to the output array
     $outputData += [PSCustomObject]@{
-        UserName = $userName
+        UserName  = $userName
         FirstName = $user.FirstName
-        LastName = $user.LastName
+        LastName  = $user.LastName
         Extension = $extension
     }
 }
