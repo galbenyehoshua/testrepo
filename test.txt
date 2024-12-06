@@ -1,20 +1,34 @@
-# Define the path to your CSV file and the target security group name
-$csvPath = "C:\path\to\users.csv"
-$securityGroup = "SecurityGroupName"
+# Input CSV file path
+$inputFile = "C:\path\to\your\inputfile.csv"
 
-# Import the CSV file containing the list of usernames
-$users = Import-Csv $csvPath
+# Output CSV file path
+$outputFile = "C:\path\to\your\outputfile.csv"
 
-# Loop through each user in the CSV
-foreach ($user in $users) {
-    # Get the user object from AD and check if they're a member of the specified group
-    $adUser = Get-ADUser -Identity $user.Username -Properties MemberOf
-    $isMember = $adUser.MemberOf -contains "CN=$securityGroup,"
+# Import data from input CSV
+$inputData = Import-Csv -Path $inputFile
 
-    # Output whether the user is a member or not
-    if ($isMember) {
-        Write-Host "$($user.Username) is a member of the group."
-    } else {
-        Write-Host "$($user.Username) is NOT a member of the group."
+# Prepare an array to store output data
+$outputData = @()
+
+# Loop through each row in the input data
+foreach ($user in $inputData) {
+    # Create a username by combining first name and last name (lowercased or any other format as needed)
+    $userName = ($user.FirstName.Substring(0,1) + $user.LastName).ToLower()
+
+    # If you have a specific rule for extensions, modify this part. For example, assigning a default value or a custom logic.
+    # This example uses a fixed extension for simplicity.
+    $extension = "1234"  # This can be dynamically assigned if needed
+
+    # Add the new user data to the output array
+    $outputData += [PSCustomObject]@{
+        UserName = $userName
+        FirstName = $user.FirstName
+        LastName = $user.LastName
+        Extension = $extension
     }
 }
+
+# Export the output data to a new CSV file
+$outputData | Export-Csv -Path $outputFile -NoTypeInformation
+
+Write-Host "Processing complete. Output saved to $outputFile"
