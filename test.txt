@@ -1,45 +1,49 @@
-# Ensure you have the ActiveDirectory module installed and imported
+# Import the Active Directory module
 Import-Module ActiveDirectory
 
-# Input CSV file path
-$inputFile = "C:\path\to\your\inputfile.csv"
+# Path to the input CSV file (contains FirstName, LastName)
+$inputCsvPath = "C:\path\to\input.csv"
 
-# Output CSV file path
-$outputFile = "C:\path\to\your\outputfile.csv"
+# Path to the output CSV file
+$outputCsvPath = "C:\path\to\output.csv"
 
-# Import data from input CSV
-$inputData = Import-Csv -Path $inputFile
+# Read the input CSV file
+$inputData = Import-Csv -Path $inputCsvPath
 
-# Prepare an array to store output data
+# Prepare an array to hold the output data
 $outputData = @()
 
-# Loop through each row in the input data
+# Loop through each row in the input CSV
 foreach ($user in $inputData) {
-    # Create a username by combining first name and last name (lowercased or any other format as needed)
-    $userName = ($user.FirstName.Substring(0,1) + $user.LastName).ToLower()
+    # Extract first name and last name
+    $firstName = $user.FirstName
+    $lastName = $user.LastName
 
-    # Query Active Directory to find the user by their first and last name
-    $adUser = Get-ADUser -Filter {GivenName -eq $user.FirstName -and Surname -eq $user.LastName} -Properties telephoneNumber
+    # Query Active Directory for the user based on first name and last name
+    $adUser = Get-ADUser -Filter {GivenName -eq $firstName -and Surname -eq $lastName} -Properties SamAccountName, telephoneNumber, extensionAttribute1
 
-    # Check if the user is found in AD
+    # Check if a user was found
     if ($adUser) {
-        # Retrieve the extension from the telephoneNumber attribute
-        $extension = $adUser.telephoneNumber  # Grabbing the phone number/extension directly
-    } else {
-        # If user not found, set extension to a default value or leave blank
-        $extension = "Not Found"
-    }
+        # Extract username (SamAccountName), phone number, and extension
+        $username = $adUser.SamAccountName
+        $phoneNumber = $adUser.telephoneNumber
 
-    # Add the new user data to the output array
-    $outputData += [PSCustomObject]@{
-        UserName  = $userName
-        FirstName = $user.FirstName
-        LastName  = $user.LastName
-        Extension = $extension
+        # Prepare the output object
+        $outputObject = New-Object PSObject -property @{
+            UserName    = $username
+            FirstName   = $firstName
+            LastName    = $lastName
+            Extension   = $extension
+        }
+
+        # Add the output object to the output data array
+        $outputData += $outputObject
+    } else {
+        Write-Warning "No user found for $firstName $lastName"
     }
 }
 
-# Export the output data to a new CSV file
-$outputData | Export-Csv -Path $outputFile -NoTypeInformation
+# Export the results to a new CSV file
+$outputData | Export-Csv -Path $outputCsvPath -NoTypeInformation
 
-Write-Host "Processing complete. Output saved to $outputFile"
+Write-Host "Output has been saved to $outputCsvPath"
