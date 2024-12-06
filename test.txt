@@ -20,7 +20,7 @@ foreach ($user in $inputData) {
     $lastName = $user.LastName
 
     # Query Active Directory for the user based on first name and last name
-    $adUser = Get-ADUser -Filter {GivenName -eq $firstName -and Surname -eq $lastName} -Properties SamAccountName, telephoneNumber, extensionAttribute1
+    $adUser = Get-ADUser -Filter {GivenName -eq $firstName -and Surname -eq $lastName} -Properties SamAccountName, telephoneNumber
 
     # Check if a user was found
     if ($adUser) {
@@ -33,7 +33,7 @@ foreach ($user in $inputData) {
             UserName    = $username
             FirstName   = $firstName
             LastName    = $lastName
-            Extension   = $extension
+            Extension   = $phoneNumber
         }
 
         # Add the output object to the output data array
