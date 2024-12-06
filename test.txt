@@ -23,8 +23,8 @@ foreach ($user in $inputData) {
 
     # Check if the user is found in AD
     if ($adUser) {
-        # Retrieve the extension (assuming it's stored in the telephoneNumber or another attribute)
-        $extension = $adUser.telephoneNumber  # You can adjust this line if the extension is stored in another attribute like 'extensionAttribute1'
+        # Retrieve the extension from the telephoneNumber attribute
+        $extension = $adUser.telephoneNumber  # Grabbing the phone number/extension directly
     } else {
         # If user not found, set extension to a default value or leave blank
         $extension = "Not Found"
